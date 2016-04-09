@@ -5,7 +5,7 @@ from faker import Faker
 import sys
 import types
 import dateutil.parser
-
+import datetime
 in_config_filename = sys.argv[1]
 zeus_token = sys.argv[2]
 
@@ -91,6 +91,7 @@ def check_field(field_name, field_config):
         field_config.append(getattr(fakegen, field_type))
       else:
         raise Exception("Internal error: field '" + field_name + "', field type '" + field_type + "' does not have an function")
+      return field_config
     else:
       # too long
       raise Exception("field '" + field_name + "' should map to an array of size 1 or 2")
@@ -115,23 +116,26 @@ if not isinstance(delay_val, int) and not isinstance(delay_val, float):
   raise Exception("timestamp arrival_function does not generate a number")
 
 in_config.pop("timestamp")
-
+def add_delay(timeval, delay):
+  return timeval + datetime.timedelta(0,delay)
 def get_datetime(datetime_str):
   return dateutil.parser.parse(datetime_str)
 
 def generate_entry(timeval, conf):
-  ret_json = {"@timestamp", timeval}
+  ret_json = {"@timestamp": timeval.isoformat()}
   for field_name, field_config in conf.items():
-    ret_json = {field_name:call_func(field_config)}
+    ret_json[field_name] = call_func(field_config)
+  return ret_json
   
-
+modified_config = {}
 for field_name, field_config in in_config.items():
-  check_field(field_name, field_config)
+  mod_field_config = check_field(field_name, field_config)
+  modified_config[field_name] = mod_field_config
 if timestamp_config["generate"] == "one-time":
   curr_time = get_datetime(timestamp_config["start_time"])
   total_delay = 0
   while(total_delay < timestamp_config["duration"]):
-    next_json = generate_entry(curr_time, in_config)
+    next_json = generate_entry(curr_time, modified_config)
     print(json.dumps(next_json))
     delay_val = call_func(timestamp_config["arrival_function"])
     total_delay += delay_val
@@ -141,7 +145,7 @@ else:
   curr_time = get_now_datetime()
   total_delay = 0
   while(total_delay < timestamp_config["duration"]):
-    next_json = generate_entry(curr_time, in_config)
+    next_json = generate_entry(curr_time, modified_config)
     print(json.dumps(next_json))
     delay_val = call_func(timestamp_config["arrival_function"])
     total_delay += delay_val
