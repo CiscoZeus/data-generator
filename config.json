@@ -1,0 +1,4 @@
+{
+  "timestamp": {"generate": "one-time", "start_time": "2016-02-26 21:28:37+01:00", "duration": 10, "arrival_function" : ["uniform",[1,10]] },
+  "name": "name"
+}
