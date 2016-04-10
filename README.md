@@ -19,7 +19,20 @@ optional arguments:
                         Zeus token
   -n, --dry_run         Print only, do not send to Zeus
 ```
-## Sample configuration file
+## Sample configuration
+Generate live data, for 100 seconds, with uniform rate of arrival (1 second). For every data point, send geoip.location centered on North Carolina, and temperature value based on a normal distributed with a mean of 55 and standard deviation of 30.
 
-## Data generators with no parameters
+```
+{
+"timestamp": {
+  "generate": "live",
+  "duration": 100,
+  "arrival_function" : ["uniform",[1,1]]
+},
+"geoip.location": ["geo_range",[35.227088928223,-80.843132019043,2]],
+"temperature":["normal",[55,30]]
+}
+```
+### Other configuration options
+Over 90 data generators are available, please see the file config.json for example of usage
 
