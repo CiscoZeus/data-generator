@@ -6,8 +6,9 @@ You need python 2.7
 
 sudo pip2.7 install -r requirements.txt
 ## Command line parameters
-usage: python2.7 data-generator.py [-h] -c CONFIG_FILE -t ZEUS_TOKEN [-n]
 ```
+usage: python2.7 data-generator.py [-h] -c CONFIG_FILE -t ZEUS_TOKEN [-n]
+
 Generate data and send to Zeus.
 
 optional arguments:
