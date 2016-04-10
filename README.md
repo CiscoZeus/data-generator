@@ -39,5 +39,9 @@ python2.7 data-generator.py -c config3.json -t <ZEUS_TOKEN>
 }
 ```
 ### Other configuration options
-Over 90 data generators are available, please see the file config.json for examples of usage
+Over 90 data generators are available, please see documentation here:
+
+https://support.ciscozeus.io/support/solutions/articles/9000061262-cisco-zeus-data-generator-documentation
+
+Also see the file config.json for examples of usage
 
