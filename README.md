@@ -39,5 +39,5 @@ python2.7 data-generator.py -c config3.json -t <ZEUS_TOKEN>
 }
 ```
 ### Other configuration options
-Over 90 data generators are available, please see the file config.json for example of usage
+Over 90 data generators are available, please see the file config.json for examples of usage
 
