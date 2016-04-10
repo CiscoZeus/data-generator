@@ -1,0 +1,12 @@
+{
+"timestamp": {
+  "generate": "one-time",
+  "start_time": "2016-02-26 21:28:37+01:00",
+  "duration": 3,
+  "arrival_function" : ["uniform",[1,1]]
+},
+"name_field": "name",
+"normal_field":["normal",[18,3]],
+"paragraph_field":["paragraph",[3,true]],
+"geo_range_field":["geo_range",[-60.33,-38.25,0.00001]]
+}

@@ -6,8 +6,21 @@ import sys
 import types
 import dateutil.parser
 import datetime
-in_config_filename = sys.argv[1]
-zeus_token = sys.argv[2]
+import argparse
+import time
+from dateutil.tz import *
+
+parser = argparse.ArgumentParser(description='Generate data and send to Zeus.')
+parser.add_argument("-c",'--config_file', required=True,
+                   help='Configuration file')
+parser.add_argument("-t",'--zeus_token', required=True,
+                   help='Zeus token')
+
+args = parser.parse_args()
+
+
+in_config_filename = args.config_file
+zeus_token = args.zeus_token
 
 fakegen = Faker()
 
@@ -18,7 +31,7 @@ in_config = json.loads(open(in_config_filename, "r").read())
 
 zeroset = set(["standard_cauchy", "standard_exponential", "standard_normal","geo_location","hex_color", "safe_hex_color",
               "rgb_color","company",
-              "currency", "iso8601","date_time", "mime_type", "file_name","file_extension","ipv4","url","company_email","free_email",
+              "currency_code", "iso8601", "mime_type", "file_name","file_extension","ipv4","url","company_email","free_email",
               "domain_name","ipv6","safe_email", "user_name", "email", "mac_address", "word", "sentence", "password", "locale",
               "md5", "sha1", "sha256", "uuid4", "language_code", "null_boolean",
               "name","name_male", "name_female",
@@ -29,8 +42,8 @@ zeroset = set(["standard_cauchy", "standard_exponential", "standard_normal","geo
               "phone_number", "ssn", "user_agent", "linux_processor", "linux_platform_token", "mac_processor",
               "credit_card_security_code", "credit_card_number", "credit_card_expire", "credit_card_provider"])
 oneset = set(["chisquare", "exponential", "geometric", "pareto", "poisson", "power", "rayleigh", "standard_t", "weibull", "zipf",
-             "numerify","date", "text", "words", "sentences","boolean"])
-twoset = set(["randint", "beta", "binomial","f", "gamma", "gumbel", "laplace", "logistic", "lognormal", "logseries","multinomial",
+             "numerify","date", "text", "words", "boolean"])
+twoset = set(["randint", "beta", "binomial","f", "gamma", "gumbel", "laplace", "logistic", "lognormal",
              "negative_binomial", "noncentral_chisquare", "normal", "uniform", "vonmises", "wald", "paragraph"])
 threeset = set(["hypergeometric", "noncentral_f", "triangular","geo_range"])
 
@@ -50,7 +63,10 @@ if timestamp_config["generate"] not in ("live", "one-time"):
   raise Exception("generate config for timestamp should be either 'live' or 'one-time'")
 
 if "duration" not in timestamp_config:
-  raise Exception("duration not specified for timestamp")    
+  raise Exception("duration not specified for timestamp")
+else:
+  #print("duration = " + str(timestamp_config["duration"]))
+  pass
 
 if timestamp_config["generate"] == "one-time":
   if "start_time" not in timestamp_config:
@@ -58,6 +74,10 @@ if timestamp_config["generate"] == "one-time":
 else:
   if "start_time" in timestamp_config:
     raise Exception("live data generation, but start_time specified for timestamp")
+def get_geo_location():
+  return str(fakegen.latitude()) + " " + str(fakegen.longitude())
+def get_geo_range(lat,long,radius):
+  return str(fakegen.geo_coordinate(center=lat, radius=radius)) + " " + str(fakegen.geo_coordinate(center=long, radius=radius))
 def check_field(field_name, field_config):
   if isinstance(field_config,types.UnicodeType):
     field_config = [field_config]
@@ -89,8 +109,12 @@ def check_field(field_name, field_config):
         field_config.append(getattr(numpy.random, field_type))
       elif hasattr(fakegen, field_type):
         field_config.append(getattr(fakegen, field_type))
+      elif field_type == "geo_location":
+        field_config.append(get_geo_location)
+      elif field_type == "geo_range":
+        field_config.append(get_geo_range)
       else:
-        raise Exception("Internal error: field '" + field_name + "', field type '" + field_type + "' does not have an function")
+        raise Exception("Internal error: field '" + field_name + "', field type '" + field_type + "' does not have a function")
       return field_config
     else:
       # too long
@@ -111,6 +135,7 @@ def call_func(call_config):
     return call_config[2](call_config[1][0], call_config[1][1], call_config[1][2])
   else:
     raise Exception("Internal error: Unexpected call config " + json.dumps(call_config))
+
 delay_val = call_func(timestamp_config["arrival_function"])
 if not isinstance(delay_val, int) and not isinstance(delay_val, float):
   raise Exception("timestamp arrival_function does not generate a number")
@@ -122,12 +147,17 @@ def get_datetime(datetime_str):
   return dateutil.parser.parse(datetime_str)
 
 def generate_entry(timeval, conf):
-  ret_json = {"@timestamp": timeval.isoformat()}
+  ret_json = {"timestamp": timeval.isoformat()}
   for field_name, field_config in conf.items():
-    ret_json[field_name] = call_func(field_config)
+    try:
+      ret_json[field_name] = call_func(field_config)
+    except:
+      print("Error generating '" + field_name + "', type '" + field_config[0] + "'")
+      raise
   return ret_json
   
 modified_config = {}
+z = client.ZeusClient(USER_TOKEN, 'api.ciscozeus.io')
 for field_name, field_config in in_config.items():
   mod_field_config = check_field(field_name, field_config)
   modified_config[field_name] = mod_field_config
@@ -136,17 +166,30 @@ if timestamp_config["generate"] == "one-time":
   total_delay = 0
   while(total_delay < timestamp_config["duration"]):
     next_json = generate_entry(curr_time, modified_config)
-    print(json.dumps(next_json))
+    try:
+      print(json.dumps(next_json))
+      z.sendLog("temperature",[next_json])
+    except:
+      print("Problem sending output " + str(next_json))
+      raise
     delay_val = call_func(timestamp_config["arrival_function"])
     total_delay += delay_val
     curr_time = add_delay(curr_time, delay_val)
 else:
   #live
-  curr_time = get_now_datetime()
+  curr_time = datetime.datetime.now(tzlocal())
   total_delay = 0
   while(total_delay < timestamp_config["duration"]):
     next_json = generate_entry(curr_time, modified_config)
-    print(json.dumps(next_json))
+    next_json["timestamp"] = str(curr_time)
+    try:
+      print(json.dumps(next_json))
+      z.sendLog("temperature",[next_json])
+    except:
+      print("Problem sending output " + str(next_json))
+      raise
     delay_val = call_func(timestamp_config["arrival_function"])
+    #print("delay_val " + str(delay_val))
     total_delay += delay_val
+    #print("total_delay " + str(total_delay))
     time.sleep(delay_val)
