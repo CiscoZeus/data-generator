@@ -1,9 +1,9 @@
 {
 "timestamp": {
   "generate": "live",
-  "duration": 20,
+  "duration": 100,
   "arrival_function" : ["uniform",[1,1]]
 },
-"geoip.location": ["geo_range",[35.227088928223,-80.843132019043,0.00001]],
-"temperature":["normal",[55,20]]
+"geoip.location": ["geo_range",[35.227088928223,-80.843132019043,2]],
+"temperature":["normal",[55,30]]
 }

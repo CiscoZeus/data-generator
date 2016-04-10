@@ -15,12 +15,15 @@ parser.add_argument("-c",'--config_file', required=True,
                    help='Configuration file')
 parser.add_argument("-t",'--zeus_token', required=True,
                    help='Zeus token')
+parser.add_argument("-n",'--dry_run', dest='dry_run', action='store_true', required=False,
+                   help='Print only, do not send to zeus')
 
 args = parser.parse_args()
 
 
 in_config_filename = args.config_file
 zeus_token = args.zeus_token
+print("dry_run " + str(args.dry_run))
 
 fakegen = Faker()
 
@@ -75,9 +78,9 @@ else:
   if "start_time" in timestamp_config:
     raise Exception("live data generation, but start_time specified for timestamp")
 def get_geo_location():
-  return str(fakegen.latitude()) + " " + str(fakegen.longitude())
+  return str(fakegen.latitude()) + ", " + str(fakegen.longitude())
 def get_geo_range(lat,long,radius):
-  return str(fakegen.geo_coordinate(center=lat, radius=radius)) + " " + str(fakegen.geo_coordinate(center=long, radius=radius))
+  return str(fakegen.geo_coordinate(center=lat, radius=radius)) + ", " + str(fakegen.geo_coordinate(center=long, radius=radius))
 def check_field(field_name, field_config):
   if isinstance(field_config,types.UnicodeType):
     field_config = [field_config]
@@ -147,7 +150,7 @@ def get_datetime(datetime_str):
   return dateutil.parser.parse(datetime_str)
 
 def generate_entry(timeval, conf):
-  ret_json = {"timestamp": timeval.isoformat()}
+  ret_json = {"@timestamp": timeval.isoformat()}
   for field_name, field_config in conf.items():
     try:
       ret_json[field_name] = call_func(field_config)
@@ -157,7 +160,8 @@ def generate_entry(timeval, conf):
   return ret_json
   
 modified_config = {}
-z = client.ZeusClient(USER_TOKEN, 'api.ciscozeus.io')
+if not args.dry_run:
+  z = client.ZeusClient(zeus_token, 'api.ciscozeus.io')
 for field_name, field_config in in_config.items():
   mod_field_config = check_field(field_name, field_config)
   modified_config[field_name] = mod_field_config
@@ -168,7 +172,8 @@ if timestamp_config["generate"] == "one-time":
     next_json = generate_entry(curr_time, modified_config)
     try:
       print(json.dumps(next_json))
-      z.sendLog("temperature",[next_json])
+      if not args.dry_run:
+        z.sendLog("temperature",[next_json])
     except:
       print("Problem sending output " + str(next_json))
       raise
@@ -181,10 +186,11 @@ else:
   total_delay = 0
   while(total_delay < timestamp_config["duration"]):
     next_json = generate_entry(curr_time, modified_config)
-    next_json["timestamp"] = str(curr_time)
+    #next_json["timestamp"] = str(curr_time)
     try:
       print(json.dumps(next_json))
-      z.sendLog("temperature",[next_json])
+      if not args.dry_run:
+        z.sendLog("temperature",[next_json])
     except:
       print("Problem sending output " + str(next_json))
       raise
