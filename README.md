@@ -3,8 +3,11 @@ Data generator that sends data to Cisco Zeus using the API
 
 To install:
 You need python 2.7
-
+```
+git clone https://github.com/CiscoZeus/data-generator
+cd data-generator
 sudo pip2.7 install -r requirements.txt
+```
 ## Command line parameters
 ```
 usage: python2.7 data-generator.py [-h] -c CONFIG_FILE -t ZEUS_TOKEN [-n]
@@ -23,6 +26,8 @@ optional arguments:
 Generate live data, for 100 seconds, with uniform rate of arrival (1 second). For every data point, send geoip.location centered on North Carolina, and temperature value based on a normal distributed with a mean of 55 and standard deviation of 30.
 
 ```
+python2.7 data-generator.py -c config3.json -t <ZEUS_TOKEN>
+
 {
 "timestamp": {
   "generate": "live",
