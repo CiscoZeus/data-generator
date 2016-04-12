@@ -23,7 +23,7 @@ optional arguments:
   -n, --dry_run         Print only, do not send to Zeus
 ```
 ## Sample configuration
-Generate live data, for 100 seconds, with uniform rate of arrival (1 second). For every data point, send geoip.location centered on North Carolina, and temperature value based on a normal distributed with a mean of 55 and standard deviation of 30.
+Generate live data, for 100 seconds, with uniform rate of arrival (1 second). For every data point, send geoip.location centered on North Carolina, and temperature value based on a normal distribution with a mean of 55 and standard deviation of 30.
 
 ```
 python2.7 data-generator.py -c config3.json -t <ZEUS_TOKEN>
