@@ -1,5 +1,5 @@
 # data-generator
-Data generator that sends data to Cisco Zeus using the API. Currently has over 90 different data generation options, such as normal, cauchy, exponential, uniform, various text fields, geo location, pareto, weibull etc.
+Data generator that sends data to Cisco Zeus using the API. Currently has over 90 different data generation options, such as normal, poisson, cauchy, exponential, uniform, pareto, weibull, various text fields, geo location,  etc.
 
 To install:
 You need python 2.7
